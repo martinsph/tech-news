@@ -1,5 +1,6 @@
 import requests
 import time
+import parsel
 
 
 # Requisito 1
@@ -11,6 +12,7 @@ def fetch(url):
     except requests.HTTPError:
         return None
     except requests.Timeout:
+        # https://docs.python-requests.org/en/latest/user/quickstart/#timeouts
         return None
     else:
         return response.text
@@ -18,7 +20,9 @@ def fetch(url):
 
 # Requisito 2
 def scrape_novidades(html_content):
-    """Seu código deve vir aqui"""
+    selector = parsel.Selector(html_content)
+    result = selector.css("h3 a.tec--card__title__link::attr(href)").getall()
+    return result
 
 
 # Requisito 3
