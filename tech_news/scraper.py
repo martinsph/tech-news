@@ -40,28 +40,41 @@ def scrape_noticia(html_content):
     url = selector.css("head link[rel='canonical']::attr(href)").get()
     title = selector.css(".tec--article__header__title::text").get()
     timestamp = selector.css("#js-article-date::attr(datetime)").get()
-    writer = selector.css(".z--font-bold a::text").get()
+    writer = (
+        selector.css(".z--font-bold::text").get()
+        or selector.css(".z--font-bold a::text").get()
+    ).strip()
 
-    shares_count = selector.css(".tec--toolbar__item::text").split() or 0
-    if shares_count != 0:
-        shares_count = shares_count[0]
+    shares_count = selector.css(".tec--toolbar__item::text").get() or 0
+    if shares_count is not None:
+        num_shares_count = str(shares_count).split()[0]
+        shares_count = int(num_shares_count)
 
-    comments_count = selector.css("#js-comments-btn::attr(data-count)").get()
-    summary = selector.css(".tec--article__body::text").get()
+    comments = int(selector.css("#js-comments-btn::attr(data-count)").get())
+    summary = selector.css(
+        ".tec--article__body p:first-child *::text").getall()
+    formated_summary = ('').join(summary)
 
-    sources = selector.css(".z--mb-16 div a.tec-badge::text").getall()
-    categories = selector.css("#js-categories a.tec-badge::text").getall()
+    sources = selector.css(".z--mb-16 div a.tec--badge::text").getall()
+    formated_sources = []
+    for source in sources:
+        formated_sources.append(source.strip())
+
+    categories = selector.css("#js-categories > a.tec--badge::text").getall()
+    formated_categories = []
+    for category in categories:
+        formated_categories.append(category.strip())
 
     news = {
         "url": url,
         "title": title,
         "timestamp": timestamp,
         "writer": writer,
-        "shares_count": int(shares_count),
-        "comments_count": int(comments_count),
-        "summary": summary,
-        "sources": sources,
-        "categories": categories,
+        "shares_count": shares_count,
+        "comments_count": comments,
+        "summary": formated_summary,
+        "sources": formated_sources,
+        "categories": formated_categories,
     }
 
     return news
