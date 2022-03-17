@@ -1,6 +1,7 @@
 import requests
 import time
 import parsel
+from tech_news.database import create_news
 
 
 # Requisito 1
@@ -12,6 +13,7 @@ def fetch(url):
     except requests.HTTPError:
         return None
     except requests.Timeout:
+        # timeouts requests
         # https://docs.python-requests.org/en/latest/user/quickstart/#timeouts
         return None
     else:
@@ -52,7 +54,7 @@ def scrape_noticia(html_content):
 
     comments = int(selector.css("#js-comments-btn::attr(data-count)").get())
     summary = selector.css(
-        ".tec--article__body p:first-child *::text").getall()
+        ".tec--article__body > p:first-child *::text").getall()
     formated_summary = ('').join(summary)
 
     sources = selector.css(".z--mb-16 div a.tec--badge::text").getall()
@@ -82,4 +84,25 @@ def scrape_noticia(html_content):
 
 # Requisito 5
 def get_tech_news(amount):
-    """Seu código deve vir aqui"""
+    URL = "https://www.tecmundo.com.br/novidades"
+    first_connection = fetch(URL)
+    # array com todos os links da primeira pagina
+    all_links = scrape_novidades(first_connection)
+
+    for counter in range(3):
+        next_page_connection = fetch(scrape_next_page_link(first_connection))
+        new_page_links = scrape_novidades(next_page_connection)
+        all_links.extend(new_page_links)
+
+    # array slicing
+    # source: https://www.w3schools.com/python/numpy/numpy_array_slicing.asp
+    all_links = all_links[:amount]
+    # print(all_links)
+
+    scraped_news = []
+    for link in all_links:
+        html_content = fetch(link)
+        scraped_news.append(scrape_noticia(html_content))
+
+    create_news(scraped_news)
+    return scraped_news
